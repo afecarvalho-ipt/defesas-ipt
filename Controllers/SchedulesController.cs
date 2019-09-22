@@ -194,9 +194,9 @@ namespace Schedules.Controllers
                 .Include(sl => sl.Students)
                 .FirstOrDefault(sl => sl.Id == model.SlotId.Value);
 
-            if (slot == null)
+            if (slot == null || !slot.IsAvailable)
             {
-                TempData["Message"] = "O turno especificado não existe.";
+                TempData["Message"] = "O turno especificado não existe, ou não está disponível.";
                 return Details(model.ScheduleId.Value); // No such slot
             }
 
