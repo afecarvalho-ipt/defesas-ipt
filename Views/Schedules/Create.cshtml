@@ -1,0 +1,199 @@
+@model ScheduleCreateModel
+
+@{
+    ViewData["Title"] = "Criar horário";
+}
+
+<h1>Criar horário</h1>
+
+<form asp-action="Create" method="post" enctype="multipart/form-data">
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="form-group">
+                <label asp-for="Name"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Description"></label>
+                <textarea asp-for="Description" class="form-control"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Location"></label>
+                <input asp-for="Location" class="form-control"/>
+                <span asp-validation-for="Location" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="When"></label>
+                <input asp-for="When" class="form-control"/>
+                <span asp-validation-for="When" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="MaxStudentsPerSlot"></label>
+                <input asp-for="MaxStudentsPerSlot" min="1" class="form-control"/>
+                <span asp-validation-for="MaxStudentsPerSlot" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="StudentsUpload"></label>
+                <input asp-for="StudentsUpload" type="file" accept=".xls,.xlsx" />
+                <span asp-validation-for="StudentsUpload" class="text-danger"></span>
+            </div>
+
+        </div>
+        <div class="col-sm-8">
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="_SlotDuration">Duração do turno</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" min="5" step="5" id="_SlotDuration" value="15" />
+                        <div class="input-group-append">
+                            <span class="input-group-text">min</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group col-md-4">
+                    <label for="_DayStart">Início</label>
+                    <input type="time" class="form-control" id="_DayStart" value="09:00" />
+                </div>
+
+                <div class="form-group col-md-4">
+                    <label for="_DayEnd">Fim</label>
+                    <input type="time" class="form-control" id="_DayEnd" value="17:30" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <button type="button" id="GenerateSlots" class="btn btn-primary">Gerar turnos</button>
+            </div>
+
+            <div class="form-group" @(Model.Slots == null ? "hidden" : "") id="TimeTableSlots">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Turno</th>
+                            <th>Descrição</th>
+                            <th>Disponível</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var i = 0;
+                            var slots = Model.Slots ?? new List<ScheduleSlotCreateModel>();
+                        }
+                        @foreach (var slot in slots)
+                        {
+                            <tr>
+                                <td>
+                                    <input type="hidden" asp-for="Slots[i].StartsAt" />
+                                    <input type="hidden" asp-for="Slots[i].EndsAt" />
+                                    
+                                    @slot.StartsAt&nbsp;-&nbsp;@slot.EndsAt
+                                </td>
+                                <td>
+                                    <input asp-for="Slots[i].Description" class="form-control" />
+                                </td>
+                                <td>
+                                    <input asp-for="Slots[i].Available" />
+                                </td>
+                            </tr>
+
+                            i++;
+                        }
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+
+    </div>
+
+    <button type="submit" class="btn btn-primary">Criar</button>
+</form>
+
+@section scripts {
+    <script>
+        $('#GenerateSlots').on('click', e => {
+            let i = 0;
+
+            let duration = Number($('#_SlotDuration').val());
+            let start = $('#_DayStart').val();
+            let end = $('#_DayEnd').val();
+
+            let slotsTable = $('#TimeTableSlots');
+            slotsTable.attr('hidden', 'hidden');
+
+            let slotsRows = slotsTable.find('tbody');
+            slotsRows.empty();
+
+            for (let slot of generateTimetable(duration, start, end)) {
+                let template = `
+                    <tr>
+                        <td>
+                            <input type="hidden" name="Slots[${i}].StartsAt" value="${slot.start}" />
+                            <input type="hidden" name="Slots[${i}].EndsAt" value="${slot.end}" />
+                            
+                            ${slot.start}&nbsp;-&nbsp;${slot.end}
+                        </td>
+                        <td>
+                            <input type="text" name="Slots[${i}].Description" value="" maxlength="512" class="form-control" />
+                        </td>
+                        <td>
+                            <input type="checkbox" value="true" checked name="Slots[${i}].Available" />
+                        </td>
+                    </tr>
+                `;
+
+                $(template).appendTo(slotsRows);
+
+                i += 1;
+            }
+
+            slotsTable.removeAttr('hidden');
+        });
+
+        function dateToIsoDateString(d) {
+            let year = d.getFullYear();
+            let month = String(d.getMonth() + 1).padStart(2, "0");
+            let day = String(d.getDate()).padStart(2, "0");
+
+            return `${year}-${month}-${day}`;
+        }
+
+
+        function* generateTimetable(duration, start, end) {
+            let whenAsString = dateToIsoDateString(new Date());
+
+            let startAsMs = new Date(`${whenAsString} ${start}`).getTime();
+            let endAsMs = new Date(`${whenAsString} ${end}`).getTime();
+
+            let durationInMs = duration * 60 * 1000;
+
+            let currentMs = startAsMs;
+
+            while (currentMs < endAsMs) {
+                let item = {
+                start: dateToHourMinute(new Date(currentMs)),
+                end: dateToHourMinute(new Date(currentMs + durationInMs))
+                };
+
+                currentMs += durationInMs;
+                yield item;
+            }
+        }
+
+        function dateToHourMinute(d) {
+            let hours = String(d.getHours()).padStart(2, "0");
+            let minutes = String(d.getMinutes()).padStart(2, "0");
+
+            return `${hours}:${minutes}`;
+        }
+
+    </script>
+}

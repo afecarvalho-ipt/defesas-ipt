@@ -1,0 +1,34 @@
+@using Schedules.Utils;
+@model ICollection<Schedule>;
+
+<h1>Horários</h1>
+
+@if (User.IsInRole(Roles.Faculty))
+{
+    <a asp-action="Create">Criar horário</a>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Quando</th>
+            <th>Nome</th>
+            <th>Local</th>
+            <th>Criado por</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var schedule in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(_ => schedule.When)</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@schedule.Id">@Html.DisplayFor(_ => schedule.Name)</a>
+                </td>
+                <td>@Html.DisplayFor(_ => schedule.Location)</td>
+                <td>@Html.DisplayFor(_ => schedule.CreatedBy)</td>
+            </tr>
+        }
+    </tbody>
+</table>
+

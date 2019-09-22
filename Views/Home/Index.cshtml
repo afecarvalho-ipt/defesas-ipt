@@ -1,0 +1,29 @@
+﻿@using System.Security.Claims;
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+@if (User.Identity.IsAuthenticated && User.Identity is ClaimsIdentity claimsId)
+{
+
+    <ul>
+        <li>Authenticated with: @claimsId.AuthenticationType</li>
+        <li>UserName: @claimsId.Name</li>
+        @foreach (var claim in claimsId.Claims)
+        {
+            <li>@claim.Type: @claim.Value</li>
+        }
+    </ul>
+
+    <a asp-action="Logout">Log out</a>
+}
+else
+{
+    <a asp-action="Login">Log in</a>
+}

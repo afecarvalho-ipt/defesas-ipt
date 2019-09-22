@@ -1,0 +1,185 @@
+@using Schedules.Utils;
+@using Schedules.Extensions;
+@model ScheduleDetailsModel
+
+@{
+    ViewData["Title"] = Model.Name;
+    var isStudent = User.IsInRole(Roles.Student);
+    var studentNumber = User.GetStudentNumber();
+    var hasAReservedSlot = Model.Slots.Any(sl => sl.Students.Any(st => st.StudentNumber == studentNumber));
+}
+
+<h1>@Html.DisplayFor(m => m.Name)</h1>
+
+<div class="row">
+    <div class="col-sm-4">
+        @if (Model.Description != null)
+        {
+            <p>@Html.DisplayFor(m => m.Description)</p>
+        }
+        <dl>
+            <dt>Local</dt>
+            <dd>@Html.DisplayFor(m => m.Location)</dd>
+            
+            <dt>Quando</dt>
+            <dd>@Html.DisplayFor(m => m.When)</dd>
+
+            <dt>Nº de alunos por turno</dt>
+            <dd>Até <strong>@Html.DisplayFor(m => m.MaxStudentsPerSlot)</strong> aluno(s) por turno</dd>
+        </dl>
+    </div>
+
+    <div class="col-sm-8">
+        <nav>
+            <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                <a class="nav-item nav-link active" id="nav-slots-tab" data-toggle="tab" href="#nav-slots" role="tab" aria-controls="nav-slots" aria-selected="true">Turnos</a>
+                <a class="nav-item nav-link" id="nav-students-tab" data-toggle="tab" href="#nav-students" role="tab" aria-controls="nav-students" aria-selected="false">Alunos</a>
+            </div>
+        </nav>
+        <div class="tab-content" id="nav-tabContent">
+            <div class="tab-pane fade show active" id="nav-slots" role="tabpanel" aria-labelledby="nav-slots-tab">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Turno</th>
+                            <th>Descrição / Alunos</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var slot in Model.Slots)
+                        {
+                            var isReservedSlot = slot.ReservedByCurrentUser;
+                            var rowClass = isReservedSlot ? "table-success" : !slot.IsAvailable ? "table-warning" : "";
+
+                            <tr class="@rowClass">
+                                <td>
+                                    @Html.DisplayFor(_ => slot.StartsAt)&nbsp;-&nbsp;@Html.DisplayFor(_ => slot.EndsAt)
+                                </td>
+                                <td>
+                                    @if (slot.IsAvailable)
+                                    {
+                                        <ul class="list-unstyled">
+                                            @foreach (var student in slot.Students)
+                                            {
+                                                <li>@Html.DisplayFor(_ => student.StudentNumber)&nbsp;-&nbsp;@Html.DisplayFor(_ => student.Name)</li>
+                                            }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <span>@Html.DisplayFor(_ => slot.Description)</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (isStudent)
+                                    {
+                                        if (slot.IsAvailable && !hasAReservedSlot)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#reserveSlotModal" value="@slot.Id">
+                                                Reservar
+                                            </button>
+                                        }
+                                        else if (isReservedSlot)
+                                        {
+                                            <form asp-action="CancelReservation" method="post">
+                                                <input type="hidden" name="ScheduleId" value="@Model.Id" />
+                                                <input type="hidden" name="SlotId" value="@slot.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
+                                            </form>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="tab-pane fade" id="nav-students" role="tabpanel" aria-labelledby="nav-students-tab">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nº Aluno</th>
+                            <th>Nome</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var student in Model.Students)
+                        {
+                            <tr>
+                                <td>
+                                    @Html.DisplayFor(_ => student.StudentNumber)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(_ => student.Name)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+</div>
+
+@section scripts {
+    <div class="modal fade" id="reserveSlotModal" tabindex="-1" role="dialog" aria-labelledby="reserveSlotModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <form class="modal-content"  asp-action="ReserveSlot" method="post">
+                <input type="hidden" name="ScheduleId" value="@Model.Id" />
+                <input type="hidden" name="SlotId" value="" />
+                
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reserveSlotModalLabel">Reservar turno</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <p>Confirme a sua inscição</p>
+
+                    @if (Model.MaxStudentsPerSlot > 1)
+                    {
+                        <div class="form-group">
+                            <label>Seleccione até <strong>@(Model.MaxStudentsPerSlot - 1)</strong> aluno(s) para fazer a defesa consigo neste turno.</label>
+
+                            @foreach (var st in Model.Students.Where(other => other.StudentNumber != studentNumber))
+                            {
+                                <div class="form-check">
+                                    <input name="OtherStudents" data-max-students-allowed="@Model.MaxStudentsPerSlot" type="checkbox" class="form-check-input" value="@st.StudentNumber" id="reserve_@st.StudentNumber" />
+                                    <label class="form-check-label" for="reserve_@st.StudentNumber">
+                                        @Html.DisplayFor(_ => st.StudentNumber) - @Html.DisplayFor(_ => st.Name)
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Reservar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        $('button[data-toggle="modal"][data-target="#reserveSlotModal"]').on('click', function (e) {
+            let value = $(this).val();
+
+            $('#reserveSlotModal input[name="SlotId"]').val(value);
+        });
+
+        $('body').on('click', '[name="OtherStudents"]', function (e) {
+            let maxStudentsAllowed = Number($(this).attr('data-max-students-allowed')) - 1;
+            let selected = $('[name="OtherStudents"]:checked').length;
+
+            console.log("Max", maxStudentsAllowed, "Selected", selected);
+
+            if (selected > maxStudentsAllowed) {
+                e.preventDefault();
+            }
+        });
+    </script>
+}
