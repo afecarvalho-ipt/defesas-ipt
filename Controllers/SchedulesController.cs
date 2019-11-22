@@ -14,7 +14,7 @@ using Schedules.Utils;
 
 namespace Schedules.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = Roles.Faculty + "," + Roles.Student)]
     public class SchedulesController : Controller
     {
         private readonly SchedulesDb db;
@@ -26,29 +26,35 @@ namespace Schedules.Controllers
 
         public IActionResult Index()
         {
-            ICollection<Schedule> schedules;
+            var schedules = CurrentUserSchedules();
 
-            if (User.IsInRole(Roles.Faculty))
-            {
-                schedules = db.Schedules
-                    .Where(s => s.CreatedBy == User.Identity.Name)
-                    .ToList();
-            }
-            else if (User.IsInRole(Roles.Student))
-            {
-                var studentNumber = User.GetStudentNumber();
+            var today = DateTime.Now.Date;
 
-                schedules = db.Schedules
-                    .Where(s => s.Students.Any(st => st.Student.StudentNumber == studentNumber))
-                    .ToList();
-            }
-            else
-            {
-                return View("Unauthorized");
-            }
+            var groupedSchedulesByAvailability = schedules
+                .GroupBy(
+                    s => s.When >= today,
+                    s => new ScheduleListModelItem
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        When = s.When,
+                        CreatedBy = s.CreatedBy,
+                        Location = s.Location
+                    })
+                .ToDictionary(
+                    s => s.Key,
+                    s => s.OrderByDescending(x => x.When).ToList()
+                );
 
-            return View(schedules);
+            var model = new ScheduleListModel
+            {
+                CurrentSchedules = groupedSchedulesByAvailability.GetValueOrDefault(true, new List<ScheduleListModelItem>()),
+                PastSchedules = groupedSchedulesByAvailability.GetValueOrDefault(false, new List<ScheduleListModelItem>()),
+            };
+
+            return View(model);
         }
+
 
         [HttpGet]
         [Authorize(Roles = Roles.Faculty)]
@@ -101,31 +107,57 @@ namespace Schedules.Controllers
                     ConfigureDataTable = (tableReader) => new ExcelDataTableConfiguration
                     {
                         UseHeaderRow = true,
-                        FilterRow = (rowReader) => !string.IsNullOrWhiteSpace(rowReader.GetString(0)),
-                        FilterColumn = (rowReader, columnIndex) => columnIndex <= 12
+                        FilterRow = (rowReader) => !string.IsNullOrWhiteSpace(rowReader.GetValue(0)?.ToString()),
+                        FilterColumn = (rowReader, columnIndex) => columnIndex <= 12,
+                        ReadHeaderRow = (rowReader) =>
+                        {
+                            // Only try to read the first 100 columns; bail otherwise as the file may be bad.
+                            var rowIndex = 0;
+
+                            while (rowIndex < 100 && string.IsNullOrWhiteSpace(rowReader.GetValue(0).ToString()))
+                            {
+                                rowReader.Read();
+                                rowIndex += 1;
+                            }
+                        }
                     }
                 });
 
                 var table = dataSet.Tables[0];
 
-                foreach (DataRow row in table.Rows)
+                if (!table.Columns.Contains("Aluno") || !table.Columns.Contains("Nome"))
                 {
-                    var studentNumber = row["Aluno"].ToString();
-                    var studentName = row["Nome"].ToString();
+                    ModelState.AddModelError(nameof(model.StudentsUpload), "O ficheiro Excel tem que conter uma coluna 'Aluno' e outra 'Nome'.");
+                    return View(model);
+                }
 
+                var studentsInExcel = table.Rows
+                    .OfType<DataRow>()
+                    .Select(row =>
+                    {
+                        var studentNumber = row["Aluno"].ToString().Trim();
+                        var studentName = row["Nome"].ToString().Trim();
+
+                        return new Student { StudentNumber = studentNumber, Name = studentName };
+                    })
+                    .Where(s => !string.IsNullOrWhiteSpace(s.Name) && !string.IsNullOrWhiteSpace(s.StudentNumber))
+                    .ToList();
+
+                foreach (var inExcel in studentsInExcel)
+                {
                     // TODO: Optimize (can this be done with only one query?)
-                    var student = db.Students.Find(studentNumber);
+                    var student = db.Students.Find(inExcel.StudentNumber);
 
                     if (student == null)
                     {
-                        student = new Student { StudentNumber = studentNumber, Name = studentName };
+                        student = new Student { StudentNumber = inExcel.StudentNumber, Name = inExcel.Name };
                         db.Students.Add(student);
                     }
 
                     students.Add(new Schedule_Student
                     {
                         Student = student,
-                        Student_Id = studentNumber,
+                        Student_Id = student.StudentNumber,
                         Schedule = schedule
                     });
                 }
@@ -151,11 +183,18 @@ namespace Schedules.Controllers
 
             var slot = db.ScheduleSlots
                 .Include(sl => sl.Students)
+                .Include(sl => sl.Schedule)
                 .FirstOrDefault(sl => sl.Id == model.SlotId.Value);
 
             if (slot == null)
             {
                 TempData["Message"] = "O turno especificado não existe.";
+                return Details(model.ScheduleId.Value);
+            }
+
+            if (slot.Schedule.When < DateTime.Now.Date)
+            {
+                TempData["Message"] = "Este horário está fechado.";
                 return Details(model.ScheduleId.Value);
             }
 
@@ -200,13 +239,19 @@ namespace Schedules.Controllers
                 return Details(model.ScheduleId.Value); // No such slot
             }
 
-            var studentNumber = User.GetStudentNumber();
+            if (slot.Schedule.When < DateTime.Now.Date)
+            {
+                TempData["Message"] = "Este horário está fechado.";
+                return Details(model.ScheduleId.Value);
+            }
 
             if (slot.ReservedBy_Id != null)
             {
                 TempData["Message"] = "Este turno já está reservado. Escolha outro turno.";
                 return Details(model.ScheduleId.Value); // Already reserved.
             }
+
+            var studentNumber = User.GetStudentNumber();
 
             var studentNumbers = new List<string> { studentNumber };
             studentNumbers.AddRange(model.OtherStudents);
@@ -241,7 +286,7 @@ namespace Schedules.Controllers
         {
             var studentNumber = User.GetStudentNumber();
 
-            var schedule = db.Schedules
+            var schedule = CurrentUserSchedules()
                 .Where(s => s.Id == id)
                 .Select(s => new ScheduleDetailsModel
                 {
@@ -288,6 +333,26 @@ namespace Schedules.Controllers
             if (schedule == null) { return View("ScheduleNotFound"); }
 
             return View(schedule);
+        }
+
+        private IQueryable<Schedule> CurrentUserSchedules()
+        {
+            IQueryable<Schedule> schedules = Enumerable.Empty<Schedule>().AsQueryable();
+
+            if (User.IsInRole(Roles.Faculty))
+            {
+                schedules = db.Schedules
+                    .Where(s => s.CreatedBy == User.Identity.Name);
+            }
+            else if (User.IsInRole(Roles.Student))
+            {
+                var studentNumber = User.GetStudentNumber();
+
+                schedules = db.Schedules
+                    .Where(s => s.Students.Any(st => st.Student.StudentNumber == studentNumber));
+            }
+
+            return schedules;
         }
     }
 }

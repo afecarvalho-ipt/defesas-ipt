@@ -1,34 +1,37 @@
 @using Schedules.Utils;
-@model ICollection<Schedule>;
+@model ScheduleListModel
 
-<h1>Horários</h1>
+@{
+    ViewData["Title"] = "Horários";
+}
+
+<h1 class="mb-3">Horários</h1>
 
 @if (User.IsInRole(Roles.Faculty))
 {
-    <a asp-action="Create">Criar horário</a>
+<div class="btn-group">
+    <a class="btn btn-primary mb-3" asp-action="Create">Criar horário</a>
+</div>
 }
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Quando</th>
-            <th>Nome</th>
-            <th>Local</th>
-            <th>Criado por</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var schedule in Model)
-        {
-            <tr>
-                <td>@Html.DisplayFor(_ => schedule.When)</td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@schedule.Id">@Html.DisplayFor(_ => schedule.Name)</a>
-                </td>
-                <td>@Html.DisplayFor(_ => schedule.Location)</td>
-                <td>@Html.DisplayFor(_ => schedule.CreatedBy)</td>
-            </tr>
-        }
-    </tbody>
-</table>
+<h2>Próximos horários</h2>
 
+@if (Model.CurrentSchedules.Any())
+{
+    <partial name="_ListPartial" model="Model.CurrentSchedules" />
+}
+else if (User.IsInRole(Roles.Faculty))
+{
+    <p>Não tem horários criados. Pode <a asp-action="Create" class="btn btn-sm btn-primary">criar</a> um horário agora.</p>
+}
+else
+{
+    <p>Não existem horários disponíveis. Por favor, verifique mais tarde.</p>
+}
+
+@if (Model.PastSchedules.Any())
+{
+    <h2 class="mt-3">Horários passados</h2>
+    <p>Verifique aqui os horários que já passaram.</p>
+    <partial name="_ListPartial" model="Model.PastSchedules" />
+}

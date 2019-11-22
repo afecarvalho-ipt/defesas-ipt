@@ -23,19 +23,19 @@
 
             <div class="form-group">
                 <label asp-for="Location"></label>
-                <input asp-for="Location" class="form-control"/>
+                <input asp-for="Location" class="form-control" />
                 <span asp-validation-for="Location" class="text-danger"></span>
             </div>
 
             <div class="form-group">
                 <label asp-for="When"></label>
-                <input asp-for="When" class="form-control"/>
+                <input asp-for="When" class="form-control" min="@DateTime.Now.ToString("yyyy-MM-dd")" />
                 <span asp-validation-for="When" class="text-danger"></span>
             </div>
 
             <div class="form-group">
                 <label asp-for="MaxStudentsPerSlot"></label>
-                <input asp-for="MaxStudentsPerSlot" min="1" class="form-control"/>
+                <input asp-for="MaxStudentsPerSlot" min="1" class="form-control" />
                 <span asp-validation-for="MaxStudentsPerSlot" class="text-danger"></span>
             </div>
 
@@ -43,8 +43,27 @@
                 <label asp-for="StudentsUpload"></label>
                 <input asp-for="StudentsUpload" type="file" accept=".xls,.xlsx" />
                 <span asp-validation-for="StudentsUpload" class="text-danger"></span>
+                <div class="form-text text-muted">
+                    <p>São aceites ficheiros Excel (.xls ou .xlsx).</p>
+                    <p>São necessárias duas colunas no ficheiro:</p>
+
+                    <ul class="list-unstyled">
+                        <li><kbd>Aluno</kbd>, para o nº do Aluno</li>
+                        <li><kbd>Nome</kbd>, para o nome do Aluno</li>
+                    </ul>
+
+                    <p>Outras colunas serão ignoradas.</p>
+
+                    <p>
+                        Pode usar uma pauta da plataforma <a href="https://netpa.ipt.pt/netpa" target="_blank" rel="nofollow noopener">NetPa</a>,
+                        ou este <a href="~/templates/StudentsTemplate.xlsx">ficheiro Excel</a> como ponto de partida.
+                    </p>
+
+                    <p>Alunos não existentes na plataforma serão criados automaticamente.</p>
+                </div>
             </div>
 
+            <button type="submit" class="btn btn-primary">Criar</button>
         </div>
         <div class="col-sm-8">
             <div class="form-row">
@@ -113,8 +132,6 @@
         </div>
 
     </div>
-
-    <button type="submit" class="btn btn-primary">Criar</button>
 </form>
 
 @section scripts {

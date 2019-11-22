@@ -72,7 +72,7 @@
                                     }
                                 </td>
                                 <td>
-                                    @if (isStudent)
+                                    @if (isStudent && Model.When.Date >= DateTime.Now.Date)
                                     {
                                         if (slot.IsAvailable && !hasAReservedSlot)
                                         {
@@ -104,21 +104,28 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var student in Model.Students)
+                        @foreach (var student in Model.Students.OrderBy(s =>
                         {
-                            <tr>
-                                <td>
-                                    @Html.DisplayFor(_ => student.StudentNumber)
-                                </td>
-                                <td>
-                                    @Html.DisplayFor(_ => student.Name)
-                                </td>
-                            </tr>
+                            var number = 0;
+                            int.TryParse(s.StudentNumber, out number);
+                            return number;
+                        })
+                        )
+                        {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(_ => student.StudentNumber)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(_ => student.Name)
+                            </td>
+                        </tr>
                         }
                     </tbody>
                 </table>
             </div>
         </div>
+    </div>
 </div>
 
 @section scripts {

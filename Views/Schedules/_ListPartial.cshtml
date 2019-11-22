@@ -1,0 +1,25 @@
+﻿@model ICollection<ScheduleListModelItem>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Quando</th>
+            <th>Nome</th>
+            <th>Local</th>
+            <th>Criado por</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var schedule in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(_ => schedule.When)</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@schedule.Id">@Html.DisplayFor(_ => schedule.Name)</a>
+                </td>
+                <td>@Html.DisplayFor(_ => schedule.Location)</td>
+                <td>@Html.DisplayFor(_ => schedule.CreatedBy)</td>
+            </tr>
+        }
+    </tbody>
+</table>

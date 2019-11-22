@@ -63,22 +63,6 @@ namespace Schedules.Data
         public long Schedule_Id { get; set; }
     }
 
-    public class Student
-    {
-        [Required, Key]
-        public string StudentNumber { get; set; }
-
-        [Required]
-        [StringLength(128)]
-        public string Name { get; set; }
-
-        public ICollection<Schedule_Student> Schedules { get; set; }
-
-        public ICollection<ScheduleSlot_Student> Slots { get; set; }
-
-        public ICollection<ScheduleSlot> SlotsReservedByThisStudent { get; set; }
-    }
-
     public class Schedule_Student
     {
         public string Student_Id { get; set; }

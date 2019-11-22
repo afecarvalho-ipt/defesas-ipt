@@ -1,29 +1,47 @@
 ﻿@using System.Security.Claims;
+@using Schedules.Utils;
 
 @{
     ViewData["Title"] = "Home Page";
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    @if (User.Identity.IsAuthenticated)
+    {
+        <h1 class="display-4">Olá, @(User.FindFirst("given_name")?.Value ?? User.Identity.Name).</h1>
+
+        <div class="row mt-5">
+            @if (User.IsInRole(Roles.Student) || User.IsInRole(Roles.Faculty))
+            {
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a asp-action="Index" asp-controller="Schedules">Ver os meus horários</a>
+                            </h5>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (User.IsInRole(Roles.Faculty))
+            {
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a asp-action="Create" asp-controller="Schedules">Criar um novo horário</a>
+                            </h5>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <h1 class="display-4">Bem-vindo à aplicação de marcação de defesas do IPT.</h1>
+
+        <p class="mt-5">Para poder ver os seus horários, por favor <a asp-action="Login" class="btn btn-sm btn-primary">inicie sessão</a> com a sua conta do IPT.</p>
+    }
 </div>
-
-@if (User.Identity.IsAuthenticated && User.Identity is ClaimsIdentity claimsId)
-{
-
-    <ul>
-        <li>Authenticated with: @claimsId.AuthenticationType</li>
-        <li>UserName: @claimsId.Name</li>
-        @foreach (var claim in claimsId.Claims)
-        {
-            <li>@claim.Type: @claim.Value</li>
-        }
-    </ul>
-
-    <a asp-action="Logout">Log out</a>
-}
-else
-{
-    <a asp-action="Login">Log in</a>
-}
