@@ -68,6 +68,15 @@ namespace Schedules
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
+            if (Configuration.GetValue("Db:Migrate", false))
+            {
+                using (var scope = app.ApplicationServices.CreateScope())
+                using (var db = scope.ServiceProvider.GetRequiredService<SchedulesDb>())
+                {
+                    db.Database.Migrate();
+                }
+            }
+
             // https://github.com/ExcelDataReader/ExcelDataReader#important-note-on-net-core
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
