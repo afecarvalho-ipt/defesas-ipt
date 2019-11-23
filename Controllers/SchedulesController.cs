@@ -284,6 +284,68 @@ namespace Schedules.Controllers
 
         public IActionResult Details(long id)
         {
+            var schedule = GetScheduleDetailsModel(id);
+
+            if (schedule == null) { return View("ScheduleNotFound"); }
+
+            return View(schedule);
+        }
+
+        [HttpGet]
+        [Authorize(Roles = Roles.Faculty)]
+        public IActionResult Print(long id)
+        {
+            var schedule = GetScheduleDetailsModel(id);
+
+            if (schedule == null) { return View("ScheduleNotFound"); }
+
+            return View(schedule);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = Roles.Faculty)]
+        public IActionResult Delete([FromForm] long id)
+        {
+            var schedule = CurrentUserSchedules()
+                .FirstOrDefault(x => x.Id == id);
+
+            if (schedule == null) { return View("ScheduleNotFound"); }
+
+            if (schedule.When.Date < DateTime.Now.Date)
+            {
+                return View("Unauthorized");
+            }
+
+            db.Schedules.Remove(schedule);
+
+            db.SaveChanges();
+
+            return RedirectToAction("Index");
+        }
+
+        private IQueryable<Schedule> CurrentUserSchedules()
+        {
+            IQueryable<Schedule> schedules = Enumerable.Empty<Schedule>().AsQueryable();
+
+            if (User.IsInRole(Roles.Faculty))
+            {
+                schedules = db.Schedules
+                    .Where(s => s.CreatedBy == User.Identity.Name);
+            }
+            else if (User.IsInRole(Roles.Student))
+            {
+                var studentNumber = User.GetStudentNumber();
+
+                schedules = db.Schedules
+                    .Where(s => s.Students.Any(st => st.Student.StudentNumber == studentNumber));
+            }
+
+            return schedules;
+        }
+
+        private ScheduleDetailsModel GetScheduleDetailsModel(long id)
+        {
             var studentNumber = User.GetStudentNumber();
 
             var schedule = CurrentUserSchedules()
@@ -330,29 +392,7 @@ namespace Schedules.Controllers
                 })
                 .SingleOrDefault();
 
-            if (schedule == null) { return View("ScheduleNotFound"); }
-
-            return View(schedule);
-        }
-
-        private IQueryable<Schedule> CurrentUserSchedules()
-        {
-            IQueryable<Schedule> schedules = Enumerable.Empty<Schedule>().AsQueryable();
-
-            if (User.IsInRole(Roles.Faculty))
-            {
-                schedules = db.Schedules
-                    .Where(s => s.CreatedBy == User.Identity.Name);
-            }
-            else if (User.IsInRole(Roles.Student))
-            {
-                var studentNumber = User.GetStudentNumber();
-
-                schedules = db.Schedules
-                    .Where(s => s.Students.Any(st => st.Student.StudentNumber == studentNumber));
-            }
-
-            return schedules;
+            return schedule;
         }
     }
 }

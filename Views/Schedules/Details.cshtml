@@ -20,13 +20,25 @@
         <dl>
             <dt>Local</dt>
             <dd>@Html.DisplayFor(m => m.Location)</dd>
-            
+
             <dt>Quando</dt>
             <dd>@Html.DisplayFor(m => m.When)</dd>
 
             <dt>Nº de alunos por turno</dt>
             <dd>Até <strong>@Html.DisplayFor(m => m.MaxStudentsPerSlot)</strong> aluno(s) por turno</dd>
         </dl>
+
+        @if (User.IsInRole(Roles.Faculty))
+        {
+            <div class="btn-toolbar">
+                @if (Model.When > DateTime.Now.Date)
+                {
+                    <button type="button" class="mr-1 btn btn-outline-danger" data-toggle="modal" data-target="#deleteScheduleModal">Apagar</button>
+                }
+
+                <a asp-action="Print" asp-route-id="@Model.Id" class="btn btn-primary">Imprimir</a>
+            </div>
+        }
     </div>
 
     <div class="col-sm-8">
@@ -105,21 +117,21 @@
                     </thead>
                     <tbody>
                         @foreach (var student in Model.Students.OrderBy(s =>
+                   {
+                       var number = 0;
+                       int.TryParse(s.StudentNumber, out number);
+                       return number;
+                   })
+                   )
                         {
-                            var number = 0;
-                            int.TryParse(s.StudentNumber, out number);
-                            return number;
-                        })
-                        )
-                        {
-                        <tr>
-                            <td>
-                                @Html.DisplayFor(_ => student.StudentNumber)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(_ => student.Name)
-                            </td>
-                        </tr>
+                            <tr>
+                                <td>
+                                    @Html.DisplayFor(_ => student.StudentNumber)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(_ => student.Name)
+                                </td>
+                            </tr>
                         }
                     </tbody>
                 </table>
@@ -131,17 +143,17 @@
 @section scripts {
     <div class="modal fade" id="reserveSlotModal" tabindex="-1" role="dialog" aria-labelledby="reserveSlotModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
-            <form class="modal-content"  asp-action="ReserveSlot" method="post">
+            <form class="modal-content" asp-action="ReserveSlot" method="post">
                 <input type="hidden" name="ScheduleId" value="@Model.Id" />
                 <input type="hidden" name="SlotId" value="" />
-                
+
                 <div class="modal-header">
                     <h5 class="modal-title" id="reserveSlotModalLabel">Reservar turno</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                        <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                
+
                 <div class="modal-body">
                     <p>Confirme a sua inscição</p>
 
@@ -162,7 +174,7 @@
                         </div>
                     }
                 </div>
-                
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Reservar</button>
@@ -170,6 +182,31 @@
             </form>
         </div>
     </div>
+    @if (Model.When > DateTime.Now.Date && User.IsInRole(Roles.Faculty))
+    {
+        <div class="modal fade" id="deleteScheduleModal" tabindex="-1" role="dialog" aria-labelledby="deleteScheduleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <form class="modal-content" asp-action="Delete" method="post">
+                    <input asp-for="Id" value="@Model.Id" type="hidden" />
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteScheduleModalLabel">Apagar horário</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+                        <p>Tem a certeza que pretende apagar este horário?</p>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Apagar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
 
     <script>
         $('button[data-toggle="modal"][data-target="#reserveSlotModal"]').on('click', function (e) {

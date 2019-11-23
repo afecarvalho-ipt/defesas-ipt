@@ -1,0 +1,57 @@
+﻿@model ScheduleDetailsModel
+
+@{
+    ViewData["Title"] = Model.Name;
+    Layout = "_PrintLayout";
+}
+
+<h1>@Html.DisplayFor(m => m.Name)</h1>
+<h3 class="text-muted">
+    <time datetime="@Model.When.ToString("yyyy-MM-dd")">@Html.DisplayFor(m => m.When)</time>, @Html.DisplayFor(m => m.Location)
+</h3>
+
+<div class="btn-toolbar mb-3 d-print-none">
+    <button class="btn btn-primary" id="print-btn" type="button">Imprimir</button>
+</div>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Turno</th>
+            <th>Descrição / Alunos</th>
+            <th>Informação / Assinatura</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var slot in Model.Slots)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(_ => slot.StartsAt)&nbsp;-&nbsp;@Html.DisplayFor(_ => slot.EndsAt)
+                </td>
+                <td>
+                    @if (slot.IsAvailable)
+                    {
+                        <ul class="list-unstyled">
+                            @foreach (var student in slot.Students)
+                            {
+                                <li>@Html.DisplayFor(_ => student.StudentNumber)&nbsp;-&nbsp;@Html.DisplayFor(_ => student.Name)</li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span>@Html.DisplayFor(_ => slot.Description)</span>
+                    }
+                </td>
+                <td></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section scripts  {
+    <script>
+        document.querySelector('#print-btn').onclick = () => window.print();
+    </script>
+}
