@@ -74,7 +74,14 @@
                                         <ul class="list-unstyled">
                                             @foreach (var student in slot.Students)
                                             {
-                                                <li>@Html.DisplayFor(_ => student.StudentNumber)&nbsp;-&nbsp;@Html.DisplayFor(_ => student.Name)</li>
+                                                <li>
+                                                    @Html.DisplayFor(_ => student.StudentNumber)&nbsp;-&nbsp;@Html.DisplayFor(_ => student.Name)
+
+                                                    @if (slot.ReservedBy == student.StudentNumber)
+                                                    {
+                                                        <text>&nbsp;</text><span class="badge badge-secondary">Reservou</span>
+                                                    }
+                                                </li>
                                             }
                                         </ul>
                                     }
@@ -116,13 +123,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var student in Model.Students.OrderBy(s =>
-                   {
-                       var number = 0;
-                       int.TryParse(s.StudentNumber, out number);
-                       return number;
-                   })
-                   )
+                        @{ 
+                            var sortedStudents = Model.Students.OrderBy(s =>
+                            {
+                                var number = 0;
+                                int.TryParse(s.StudentNumber, out number);
+                                return number;
+                            });
+                        }
+                        @foreach (var student in sortedStudents)
                         {
                             <tr>
                                 <td>
@@ -155,7 +164,7 @@
                 </div>
 
                 <div class="modal-body">
-                    <p>Confirme a sua inscição</p>
+                    <p>Confirme a sua inscrição</p>
 
                     @if (Model.MaxStudentsPerSlot > 1)
                     {
@@ -182,6 +191,36 @@
             </form>
         </div>
     </div>
+
+    @if (TempData["Message"] is string message)
+    {
+        <div class="modal fade" id="reserveSlotMessageModal" tabindex="-1" role="alertdialog" aria-labelledby="reserveSlotMessageModalLabel" aria-hidden="false">
+            <div class="modal-dialog modal-lg" role="document">
+                <form class="modal-content" asp-action="Delete" method="post">
+                    <input asp-for="Id" value="@Model.Id" type="hidden" />
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="reserveSlotMessageModalLabel">Aviso</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+                        <p>@message</p>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            $(document).ready(() => $('#reserveSlotMessageModal').modal('show'));
+        </script>
+    }
+
     @if (Model.When > DateTime.Now.Date && User.IsInRole(Roles.Faculty))
     {
         <div class="modal fade" id="deleteScheduleModal" tabindex="-1" role="dialog" aria-labelledby="deleteScheduleModalLabel" aria-hidden="true">

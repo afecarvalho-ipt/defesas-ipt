@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Schedules.Data;
 
 namespace Schedules.Migrations
 {
     [DbContext(typeof(SchedulesDb))]
-    partial class SchedulesDbModelSnapshot : ModelSnapshot
+    [Migration("20200106184633_ScheduleSlotTimestamp")]
+    partial class ScheduleSlotTimestamp
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

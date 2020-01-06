@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using ExcelDataReader;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -68,13 +69,13 @@ namespace Schedules.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(ScheduleCreateModel model)
         {
-            if (!ModelState.IsValid) { return View(model); }
+            if (model == null || !ModelState.IsValid) { return View(model); }
 
             var students = new List<Schedule_Student>();
             var tempFile = System.IO.Path.GetTempFileName();
             var when = model.When.Value.Date;
 
-            var whenAsString = when.ToString("yyyy-MM-dd");
+            var whenAsString = when.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
             var schedule = new Schedule
             {
@@ -175,7 +176,7 @@ namespace Schedules.Controllers
         [Authorize(Roles = Roles.Student)]
         public IActionResult CancelReservation(CancelReservationModel model)
         {
-            if (!ModelState.IsValid)
+            if (model == null || !ModelState.IsValid)
             {
                 TempData["Message"] = "Dados de reserva de turno inválidos.";
                 return RedirectToAction(nameof(Index));
@@ -222,7 +223,7 @@ namespace Schedules.Controllers
         [Authorize(Roles = Roles.Student)]
         public IActionResult ReserveSlot(ReserveSlotModel model)
         {
-            if (!ModelState.IsValid)
+            if (model == null || !ModelState.IsValid)
             {
                 TempData["Message"] = "Dados de reserva de turno inválidos.";
                 return RedirectToAction(nameof(Index));
@@ -236,19 +237,19 @@ namespace Schedules.Controllers
             if (slot == null || !slot.IsAvailable)
             {
                 TempData["Message"] = "O turno especificado não existe, ou não está disponível.";
-                return Details(model.ScheduleId.Value); // No such slot
+                return RedirectToAction("Details", new { id = model.ScheduleId.Value }); // No such slot
             }
 
             if (slot.Schedule.When < DateTime.Now.Date)
             {
                 TempData["Message"] = "Este horário está fechado.";
-                return Details(model.ScheduleId.Value);
+                return RedirectToAction("Details", new { id = model.ScheduleId.Value });
             }
 
             if (slot.ReservedBy_Id != null)
             {
                 TempData["Message"] = "Este turno já está reservado. Escolha outro turno.";
-                return Details(model.ScheduleId.Value); // Already reserved.
+                return RedirectToAction("Details", new { id = model.ScheduleId.Value }); // Already reserved.
             }
 
             var studentNumber = User.GetStudentNumber();
@@ -261,7 +262,7 @@ namespace Schedules.Controllers
             if (students.Count > slot.Schedule.MaxStudentsPerSlot)
             {
                 TempData["Message"] = "Foram seleccionados demasiados alunos.";
-                return Details(model.ScheduleId.Value); // Too many students.
+                return RedirectToAction("Details", new { id = model.ScheduleId.Value }); // Too many students.
             }
 
             slot.ReservedAt = DateTime.Now;
@@ -277,7 +278,16 @@ namespace Schedules.Controllers
 
             db.ScheduleSlots.Update(slot);
 
-            db.SaveChanges();
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (DbUpdateException)
+            {
+                TempData["Message"] = "Outra pessoa reservou o turno que escolheu. Escolha outro turno.";
+                return RedirectToAction("Details", new { id = model.ScheduleId.Value });
+            }
+
 
             return RedirectToAction("Details", new { id = model.ScheduleId });
         }
@@ -365,6 +375,7 @@ namespace Schedules.Controllers
                             Id = sl.Id,
                             CompletedAt = sl.CompletedAt,
                             Description = sl.Description,
+                            ReservedBy = sl.ReservedBy_Id,
                             ReservedByCurrentUser = sl.ReservedAt != null && sl.ReservedBy_Id == studentNumber,
                             EndsAt = sl.EndsAt,
                             IsAvailable = sl.IsAvailable,

@@ -7,7 +7,7 @@ namespace Schedules.Extensions
     {
         public static string GetStudentNumber(this ClaimsPrincipal principal)
         {
-            if (principal.Identity is ClaimsIdentity claims)
+            if (principal?.Identity is ClaimsIdentity claims)
             {
                 return claims.FindFirst(Claims.StudentNumber)?.Value;
             }

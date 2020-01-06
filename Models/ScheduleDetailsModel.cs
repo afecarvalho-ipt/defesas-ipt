@@ -44,6 +44,8 @@ namespace Schedules.Models
 
         public bool ReservedByCurrentUser { get; set; }
 
+        public string ReservedBy { get; set; }
+
         [DataType(DataType.Time)]
         [Display(Name = "Início")]
         public DateTime StartsAt { get; set; }

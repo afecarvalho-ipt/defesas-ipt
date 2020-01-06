@@ -42,14 +42,14 @@ namespace Schedules.Models
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            var fileName = StudentsUpload.FileName.ToLowerInvariant();
+            var fileName = StudentsUpload.FileName.ToUpperInvariant();
             var extension = Path.GetExtension(fileName);
             var contentType = StudentsUpload.ContentType;
 
-            var allowedExtensions = new[] { ".xls", ".xlsx" };
+            var allowedExtensions = new[] { ".XLS", ".XLSX" };
             var allowedContentTypes = new[] { "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
 
-            if (!allowedExtensions.Contains(extension) && !allowedContentTypes.Contains(contentType))
+            if (!allowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase) && !allowedContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase))
             {
                 yield return new ValidationResult("Só são permitidos ficheiros Excel (.xls ou .xlsx)");
             }

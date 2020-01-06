@@ -17,6 +17,7 @@ using Schedules.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Localization;
 using System.Globalization;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace Schedules
 {
@@ -63,6 +64,8 @@ namespace Schedules
             });
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+
+            services.AddSingleton<ITempDataProvider, CookieTempDataProvider>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -10,7 +10,7 @@
     {
         <h1 class="display-4">Olá, @(User.FindFirst("given_name")?.Value ?? User.Identity.Name).</h1>
 
-        <div class="row mt-5">
+        <div class="row mt-5 mb-2">
             @if (User.IsInRole(Roles.Student) || User.IsInRole(Roles.Faculty))
             {
                 <div class="col">
@@ -37,6 +37,10 @@
                 </div>
             }
         </div>
+
+        <p>
+            Tem alguma questão ou sugestão? Contacte <a href="mailto:afecarvalho@ipt.pt">afecarvalho@ipt.pt</a>!
+        </p>
     }
     else
     {

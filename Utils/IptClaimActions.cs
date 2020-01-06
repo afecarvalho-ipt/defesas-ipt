@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
@@ -16,11 +17,11 @@ namespace Schedules.Utils
 
         public override void Run(JObject userData, ClaimsIdentity identity, string issuer)
         {
-            if (userData == null) { return; }
+            if (userData == null || identity == null) { return; }
 
             // https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens
 
-            var emailToken = userData.GetValue("email");
+            var emailToken = userData.GetValue("email", StringComparison.OrdinalIgnoreCase);
 
             if (emailToken?.Type == JTokenType.String)
             {

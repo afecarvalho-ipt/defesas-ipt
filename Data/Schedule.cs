@@ -61,6 +61,10 @@ namespace Schedules.Data
         public Schedule Schedule { get; set; }
 
         public long Schedule_Id { get; set; }
+
+        [Timestamp]
+        [MaxLength(8)]
+        public byte[] Timestamp { get; set; }
     }
 
     public class Schedule_Student
