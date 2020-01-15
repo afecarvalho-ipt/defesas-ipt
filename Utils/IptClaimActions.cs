@@ -37,12 +37,12 @@ namespace Schedules.Utils
 
                 if (studentNumberMatch.Success)
                 {
-                    identity.AddClaim(new Claim(Claims.StudentNumber, studentNumberMatch.Captures[0].Value));
-                    identity.AddClaim(new Claim(ClaimTypes.Role, Roles.Student));
+                    identity.AddClaim(new Claim(SchedulesClaimTypes.StudentNumber, studentNumberMatch.Captures[0].Value));
+                    identity.AddClaim(new Claim(ClaimTypes.Role, SchedulesRoles.Student));
                 }
                 else
                 {
-                    identity.AddClaim(new Claim(ClaimTypes.Role, Roles.Faculty));
+                    identity.AddClaim(new Claim(ClaimTypes.Role, SchedulesRoles.Faculty));
                 }
             }
         }

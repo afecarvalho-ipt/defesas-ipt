@@ -25,6 +25,7 @@ namespace Schedules.Models
 
         [Required]
         [Display(Name = "Nº máximo de estudantes por turno")]
+        [Range(minimum: 1, maximum: short.MaxValue)]
         public int? MaxStudentsPerSlot { get; set; }
 
         [Required]
