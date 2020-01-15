@@ -149,21 +149,25 @@ namespace Schedules.Controllers
                     .Distinct(new LambdaEqualityComparer<Student, string>(s => s.StudentNumber))
                     .ToList();
 
+                // Get the student numbers that are both in the db and the Excel spreadsheet.
+                // For those that aren't in the db (i.e., not in this variable), add them to the db.
+                var studentsInExcelAndDb = db.Students
+                    .Where(s => studentsInExcel.Select(e => e.StudentNumber).ToList().Contains(s.StudentNumber))
+                    .Select(s => s.StudentNumber)
+                    .ToHashSet();
+
                 foreach (var inExcel in studentsInExcel)
                 {
-                    // TODO: Optimize (can this be done with only one query?)
-                    var student = db.Students.Find(inExcel.StudentNumber);
+                    var studentNumber = inExcel.StudentNumber;
 
-                    if (student == null)
+                    if (!studentsInExcelAndDb.Contains(studentNumber))
                     {
-                        student = new Student { StudentNumber = inExcel.StudentNumber, Name = inExcel.Name };
-                        db.Students.Add(student);
+                        db.Students.Add(new Student { StudentNumber = studentNumber, Name = inExcel.Name });
                     }
 
                     students.Add(new Schedule_Student
                     {
-                        Student = student,
-                        Student_Id = student.StudentNumber,
+                        Student_Id = studentNumber,
                         Schedule = schedule
                     });
                 }

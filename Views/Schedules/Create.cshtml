@@ -112,7 +112,7 @@
                                 <td>
                                     <input type="hidden" asp-for="Slots[i].StartsAt" />
                                     <input type="hidden" asp-for="Slots[i].EndsAt" />
-                                    
+
                                     @slot.StartsAt&nbsp;-&nbsp;@slot.EndsAt
                                 </td>
                                 <td>
@@ -155,7 +155,7 @@
                         <td>
                             <input type="hidden" name="Slots[${i}].StartsAt" value="${slot.start}" />
                             <input type="hidden" name="Slots[${i}].EndsAt" value="${slot.end}" />
-                            
+
                             ${slot.start}&nbsp;-&nbsp;${slot.end}
                         </td>
                         <td>
@@ -196,8 +196,8 @@
 
             while (currentMs < endAsMs) {
                 let item = {
-                start: dateToHourMinute(new Date(currentMs)),
-                end: dateToHourMinute(new Date(currentMs + durationInMs))
+                    start: dateToHourMinute(new Date(currentMs)),
+                    end: dateToHourMinute(new Date(currentMs + durationInMs))
                 };
 
                 currentMs += durationInMs;
