@@ -34,7 +34,7 @@ namespace Schedules.Models
         public DateTime? When { get; set; }
 
         [Required]
-        [Display(Name = "Excel com alunos inscritos")]
+        [Display(Name = "Excel com alunos a inscrever")]
         public IFormFile StudentsUpload { get; set; }
 
         [Required]

@@ -150,7 +150,7 @@
             slotsRows.empty();
 
             for (let slot of generateTimetable(duration, start, end)) {
-                let template = `
+                let template = $(`
                     <tr>
                         <td>
                             <input type="hidden" name="Slots[${i}].StartsAt" value="${slot.start}" />
@@ -165,9 +165,9 @@
                             <input type="checkbox" value="true" checked name="Slots[${i}].Available" />
                         </td>
                     </tr>
-                `;
+                `);
 
-                $(template).appendTo(slotsRows);
+                template.appendTo(slotsRows);
 
                 i += 1;
             }
@@ -182,7 +182,6 @@
 
             return `${year}-${month}-${day}`;
         }
-
 
         function* generateTimetable(duration, start, end) {
             let whenAsString = dateToIsoDateString(new Date());
