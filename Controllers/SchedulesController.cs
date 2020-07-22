@@ -115,7 +115,7 @@ namespace Schedules.Controllers
                             // Only try to read the first 100 columns; bail otherwise as the file may be bad.
                             var rowIndex = 0;
 
-                            while (rowIndex < 100 && string.IsNullOrWhiteSpace(rowReader.GetValue(0).ToString()))
+                            while (rowIndex < 100 && string.IsNullOrWhiteSpace(rowReader.GetValue(0)?.ToString()))
                             {
                                 rowReader.Read();
                                 rowIndex += 1;
@@ -142,6 +142,7 @@ namespace Schedules.Controllers
                         return new Student { StudentNumber = studentNumber, Name = studentName };
                     })
                     .Where(s => !string.IsNullOrWhiteSpace(s.Name) && !string.IsNullOrWhiteSpace(s.StudentNumber))
+                    .Distinct(new LambdaEqualityComparer<Student, string>(s => s.StudentNumber))
                     .ToList();
 
                 foreach (var inExcel in studentsInExcel)
