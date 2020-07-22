@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Localization;
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.Hosting;
 
 namespace Schedules
 {
@@ -63,13 +64,13 @@ namespace Schedules
                 options.UseSqlite(Configuration.GetConnectionString("SchedulesDb"));
             });
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             services.AddSingleton<ITempDataProvider, CookieTempDataProvider>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (Configuration.GetValue("Db:Migrate", false))
             {
@@ -111,11 +112,14 @@ namespace Schedules
 
             app.UseCookiePolicy();
 
-            app.UseMvc(routes =>
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
             {
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                endpoints.MapDefaultControllerRoute();
+                endpoints.MapControllers();
             });
         }
     }

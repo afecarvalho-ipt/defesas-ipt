@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Newtonsoft.Json.Linq;
@@ -15,17 +16,17 @@ namespace Schedules.Utils
         {
         }
 
-        public override void Run(JObject userData, ClaimsIdentity identity, string issuer)
+        public override void Run(JsonElement userData, ClaimsIdentity identity, string issuer)
         {
-            if (userData == null || identity == null) { return; }
+            if (identity == null) { return; }
 
             // https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens
 
-            var emailToken = userData.GetValue("email", StringComparison.OrdinalIgnoreCase);
+            var emailToken = userData.GetProperty("email");
 
-            if (emailToken?.Type == JTokenType.String)
+            if (emailToken.ValueKind == JsonValueKind.String)
             {
-                var email = emailToken.Value<string>().Split('@').First();
+                var email = emailToken.GetString().Split('@').First();
 
                 if (string.IsNullOrWhiteSpace(identity.Name))
                 {

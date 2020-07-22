@@ -32,6 +32,7 @@ namespace Schedules.Controllers
             var today = DateTime.Now.Date;
 
             var groupedSchedulesByAvailability = schedules
+                .AsEnumerable() // The query can't be done via SQL
                 .GroupBy(
                     s => s.When >= today,
                     s => new ScheduleListModelItem
@@ -141,7 +142,9 @@ namespace Schedules.Controllers
 
                         return new Student { StudentNumber = studentNumber, Name = studentName };
                     })
+                    // Remove empty rows
                     .Where(s => !string.IsNullOrWhiteSpace(s.Name) && !string.IsNullOrWhiteSpace(s.StudentNumber))
+                    // Remove duplicates
                     .Distinct(new LambdaEqualityComparer<Student, string>(s => s.StudentNumber))
                     .ToList();
 
