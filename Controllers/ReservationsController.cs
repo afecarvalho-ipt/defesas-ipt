@@ -151,6 +151,5 @@ namespace Schedules.Controllers
         {
             return RedirectToAction("Index", "Schedules");
         }
-
     }
 }

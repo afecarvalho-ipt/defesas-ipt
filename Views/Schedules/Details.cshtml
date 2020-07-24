@@ -101,7 +101,7 @@
                                         }
                                         else if (isReservedSlot)
                                         {
-                                            <form asp-action="CancelReservation" method="post">
+                                            <form asp-action="CancelReservation" asp-controller="Reservations" method="post">
                                                 <input type="hidden" name="ScheduleId" value="@Model.Id" />
                                                 <input type="hidden" name="SlotId" value="@slot.Id" />
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
@@ -152,7 +152,7 @@
 @section scripts {
     <div class="modal fade" id="reserveSlotModal" tabindex="-1" role="dialog" aria-labelledby="reserveSlotModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
-            <form class="modal-content" asp-action="ReserveSlot" method="post">
+            <form class="modal-content" asp-action="ReserveSlot" asp-controller="Reservations" method="post">
                 <input type="hidden" name="ScheduleId" value="@Model.Id" />
                 <input type="hidden" name="SlotId" value="" />
 
