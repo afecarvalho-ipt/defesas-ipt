@@ -78,6 +78,14 @@ namespace Schedules.Controllers
                 return RedirectToScheduleList();
             }
 
+            var studentNumber = User.GetStudentNumber();
+
+            if (db.ScheduleSlots.Any(sl => sl.Students.Any(st => st.Student.StudentNumber == studentNumber)))
+            {
+                TempData["Message"] = "Já se encontra assignado a um turno.";
+                return RedirectToScheduleDetails(model.ScheduleId.Value);
+            }
+
             var slot = db.ScheduleSlots
                 .Include(sl => sl.Schedule)
                 .Include(sl => sl.Students)
@@ -101,14 +109,21 @@ namespace Schedules.Controllers
                 return RedirectToScheduleDetails(model.ScheduleId.Value);
             }
 
-            var studentNumber = User.GetStudentNumber();
-
             var studentNumbers = new List<string> { studentNumber };
             studentNumbers.AddRange(model.OtherStudents);
 
-            var students = db.Students
-                .Where(st => studentNumbers.Contains(st.StudentNumber))
+            // Get the students assigned to this schedule. Helps ensure people who aren't assigned to a schedule
+            // can't actually reserve slots.
+            var students = db.Set<Schedule_Student>()
+                .Where(s => s.Schedule_Id == slot.Schedule_Id && studentNumbers.Contains(s.Student.StudentNumber))
+                .Select(s => s.Student)
                 .ToList();
+
+            if (!students.Any())
+            {
+                TempData["Message"] = "Não foi seleccionado nenhum aluno válido.";
+                return RedirectToScheduleDetails(model.ScheduleId.Value);
+            }
 
             if (students.Count > slot.Schedule.MaxStudentsPerSlot)
             {
