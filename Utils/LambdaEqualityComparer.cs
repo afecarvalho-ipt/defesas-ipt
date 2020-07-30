@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Schedules.Utils
 {
+    /// <summary>
+    /// IEqualityComparer that takes a function to specify which field(s) to compare.
+    /// </summary>
     public class LambdaEqualityComparer<T, R> : IEqualityComparer<T>
     {
         private readonly Func<T, R> valueExtractor;

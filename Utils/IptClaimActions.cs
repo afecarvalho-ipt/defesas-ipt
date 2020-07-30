@@ -4,10 +4,16 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
-using Newtonsoft.Json.Linq;
 
 namespace Schedules.Utils
 {
+    /// <summary>
+    /// ClaimAction that reads claims from IPT and adds:
+    /// - The student number (if the user is a student).
+    /// - The user's email.
+    /// - The user's role.
+    /// </summary>
+
     public class IptRoleClaimAction : ClaimAction
     {
         static readonly Regex StudentEmail = new Regex(@"(\d{2,})");

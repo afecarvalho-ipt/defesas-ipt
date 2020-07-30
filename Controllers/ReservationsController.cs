@@ -161,7 +161,6 @@ namespace Schedules.Controllers
         {
             return RedirectToAction("Details", "Schedules", new { id = scheduleId });
         }
-
         private IActionResult RedirectToScheduleList()
         {
             return RedirectToAction("Index", "Schedules");

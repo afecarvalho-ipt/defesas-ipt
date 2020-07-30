@@ -229,7 +229,7 @@
             let maxStudentsAllowed = Number($(this).attr('data-max-students-allowed')) - 1;
             let selected = $('[name="OtherStudents"]:checked').length;
 
-            console.log("Max", maxStudentsAllowed, "Selected", selected);
+            console.debug("Max", maxStudentsAllowed, "Selected", selected);
 
             if (selected > maxStudentsAllowed) {
                 e.preventDefault();
