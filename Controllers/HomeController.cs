@@ -5,7 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Schedules.Models;
 
 namespace Schedules.Controllers
@@ -34,15 +37,17 @@ namespace Schedules.Controllers
             return Challenge(new AuthenticationProperties { RedirectUri = Url.RouteUrl("Index") });
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        public IActionResult Error([FromServices] IWebHostEnvironment env)
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            var context = HttpContext.Features.Get<IExceptionHandlerFeature>();
+
+            return View(new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+                Exception = context.Error,
+                IsDevelopment = env.IsDevelopment()
+            });
         }
     }
 }

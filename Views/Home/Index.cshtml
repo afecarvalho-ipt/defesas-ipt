@@ -8,10 +8,10 @@
 <div class="text-center">
     @if (User.Identity.IsAuthenticated)
     {
-        <h1 class="display-4">Olá, @(User.FindFirst("given_name")?.Value ?? User.Identity.Name).</h1>
+        <h1 class="display-4">Olá, @(User.FindFirst("given_name")?.Value ?? User.Identity.Name)!</h1>
 
         <div class="row mt-5 mb-2">
-            @if (User.IsInRole(Roles.Student) || User.IsInRole(Roles.Faculty))
+            @if (User.IsInRole(SchedulesRoles.Student) || User.IsInRole(SchedulesRoles.Faculty))
             {
                 <div class="col">
                     <div class="card">
@@ -24,7 +24,7 @@
                 </div>
             }
 
-            @if (User.IsInRole(Roles.Faculty))
+            @if (User.IsInRole(SchedulesRoles.Faculty))
             {
                 <div class="col">
                     <div class="card">

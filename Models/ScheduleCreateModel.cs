@@ -25,6 +25,7 @@ namespace Schedules.Models
 
         [Required]
         [Display(Name = "Nº máximo de estudantes por turno")]
+        [Range(minimum: 1, maximum: short.MaxValue)]
         public int? MaxStudentsPerSlot { get; set; }
 
         [Required]
@@ -33,7 +34,7 @@ namespace Schedules.Models
         public DateTime? When { get; set; }
 
         [Required]
-        [Display(Name = "Excel com alunos inscritos")]
+        [Display(Name = "Excel com alunos a inscrever")]
         public IFormFile StudentsUpload { get; set; }
 
         [Required]

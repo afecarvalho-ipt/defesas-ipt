@@ -15,7 +15,7 @@ using Schedules.Utils;
 
 namespace Schedules.Controllers
 {
-    [Authorize(Roles = Roles.Faculty + "," + Roles.Student)]
+    [Authorize(Roles = SchedulesRoles.Faculty + "," + SchedulesRoles.Student)]
     public class SchedulesController : Controller
     {
         private readonly SchedulesDb db;
@@ -31,6 +31,8 @@ namespace Schedules.Controllers
 
             var today = DateTime.Now.Date;
 
+            // [true] -> Current and future schedules
+            // [false] -> Past schedules
             var groupedSchedulesByAvailability = schedules
                 .AsEnumerable() // The query can't be done via SQL
                 .GroupBy(
@@ -57,16 +59,15 @@ namespace Schedules.Controllers
             return View(model);
         }
 
-
         [HttpGet]
-        [Authorize(Roles = Roles.Faculty)]
+        [Authorize(Roles = SchedulesRoles.Faculty)]
         public IActionResult Create()
         {
             return View(new ScheduleCreateModel());
         }
 
         [HttpPost]
-        [Authorize(Roles = Roles.Faculty)]
+        [Authorize(Roles = SchedulesRoles.Faculty)]
         [ValidateAntiForgeryToken]
         public IActionResult Create(ScheduleCreateModel model)
         {
@@ -148,21 +149,25 @@ namespace Schedules.Controllers
                     .Distinct(new LambdaEqualityComparer<Student, string>(s => s.StudentNumber))
                     .ToList();
 
+                // Get the student numbers that are both in the db and the Excel spreadsheet.
+                // For those that aren't in the db (i.e., not in this variable), add them to the db.
+                var studentsInExcelAndDb = db.Students
+                    .Where(s => studentsInExcel.Select(e => e.StudentNumber).ToList().Contains(s.StudentNumber))
+                    .Select(s => s.StudentNumber)
+                    .ToHashSet();
+
                 foreach (var inExcel in studentsInExcel)
                 {
-                    // TODO: Optimize (can this be done with only one query?)
-                    var student = db.Students.Find(inExcel.StudentNumber);
+                    var studentNumber = inExcel.StudentNumber;
 
-                    if (student == null)
+                    if (!studentsInExcelAndDb.Contains(studentNumber))
                     {
-                        student = new Student { StudentNumber = inExcel.StudentNumber, Name = inExcel.Name };
-                        db.Students.Add(student);
+                        db.Students.Add(new Student { StudentNumber = studentNumber, Name = inExcel.Name });
                     }
 
                     students.Add(new Schedule_Student
                     {
-                        Student = student,
-                        Student_Id = student.StudentNumber,
+                        Student_Id = studentNumber,
                         Schedule = schedule
                     });
                 }
@@ -175,127 +180,6 @@ namespace Schedules.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = Roles.Student)]
-        public IActionResult CancelReservation(CancelReservationModel model)
-        {
-            if (model == null || !ModelState.IsValid)
-            {
-                TempData["Message"] = "Dados de reserva de turno inválidos.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var slot = db.ScheduleSlots
-                .Include(sl => sl.Students)
-                .Include(sl => sl.Schedule)
-                .FirstOrDefault(sl => sl.Id == model.SlotId.Value);
-
-            if (slot == null)
-            {
-                TempData["Message"] = "O turno especificado não existe.";
-                return Details(model.ScheduleId.Value);
-            }
-
-            if (slot.Schedule.When < DateTime.Now.Date)
-            {
-                TempData["Message"] = "Este horário está fechado.";
-                return Details(model.ScheduleId.Value);
-            }
-
-            var studentNumber = User.GetStudentNumber();
-
-            if (slot.ReservedBy_Id != studentNumber)
-            {
-                TempData["Message"] = "Só pode cancelar turnos reservados por si.";
-                return Details(model.ScheduleId.Value);
-            }
-
-            slot.ReservedBy_Id = null;
-            slot.ReservedAt = null;
-            slot.Students.Clear();
-
-            db.ScheduleSlots.Update(slot);
-
-            db.SaveChanges();
-
-            return RedirectToAction("Details", new { id = model.ScheduleId });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = Roles.Student)]
-        public IActionResult ReserveSlot(ReserveSlotModel model)
-        {
-            if (model == null || !ModelState.IsValid)
-            {
-                TempData["Message"] = "Dados de reserva de turno inválidos.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var slot = db.ScheduleSlots
-                .Include(sl => sl.Schedule)
-                .Include(sl => sl.Students)
-                .FirstOrDefault(sl => sl.Id == model.SlotId.Value);
-
-            if (slot == null || !slot.IsAvailable)
-            {
-                TempData["Message"] = "O turno especificado não existe, ou não está disponível.";
-                return RedirectToAction("Details", new { id = model.ScheduleId.Value }); // No such slot
-            }
-
-            if (slot.Schedule.When < DateTime.Now.Date)
-            {
-                TempData["Message"] = "Este horário está fechado.";
-                return RedirectToAction("Details", new { id = model.ScheduleId.Value });
-            }
-
-            if (slot.ReservedBy_Id != null)
-            {
-                TempData["Message"] = "Este turno já está reservado. Escolha outro turno.";
-                return RedirectToAction("Details", new { id = model.ScheduleId.Value }); // Already reserved.
-            }
-
-            var studentNumber = User.GetStudentNumber();
-
-            var studentNumbers = new List<string> { studentNumber };
-            studentNumbers.AddRange(model.OtherStudents);
-
-            var students = db.Students.Where(st => studentNumbers.Contains(st.StudentNumber)).ToList();
-
-            if (students.Count > slot.Schedule.MaxStudentsPerSlot)
-            {
-                TempData["Message"] = "Foram seleccionados demasiados alunos.";
-                return RedirectToAction("Details", new { id = model.ScheduleId.Value }); // Too many students.
-            }
-
-            slot.ReservedAt = DateTime.Now;
-            slot.ReservedBy_Id = studentNumber;
-
-            slot.Students = students
-                .Select(st => new ScheduleSlot_Student
-                {
-                    ScheduleSlot = slot,
-                    Student = st
-                })
-                .ToList();
-
-            db.ScheduleSlots.Update(slot);
-
-            try
-            {
-                db.SaveChanges();
-            }
-            catch (DbUpdateException)
-            {
-                TempData["Message"] = "Outra pessoa reservou o turno que escolheu. Escolha outro turno.";
-                return RedirectToAction("Details", new { id = model.ScheduleId.Value });
-            }
-
-
-            return RedirectToAction("Details", new { id = model.ScheduleId });
-        }
-
         public IActionResult Details(long id)
         {
             var schedule = GetScheduleDetailsModel(id);
@@ -306,7 +190,7 @@ namespace Schedules.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = Roles.Faculty)]
+        [Authorize(Roles = SchedulesRoles.Faculty)]
         public IActionResult Print(long id)
         {
             var schedule = GetScheduleDetailsModel(id);
@@ -318,7 +202,7 @@ namespace Schedules.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = Roles.Faculty)]
+        [Authorize(Roles = SchedulesRoles.Faculty)]
         public IActionResult Delete([FromForm] long id)
         {
             var schedule = CurrentUserSchedules()
@@ -342,13 +226,15 @@ namespace Schedules.Controllers
         {
             IQueryable<Schedule> schedules = Enumerable.Empty<Schedule>().AsQueryable();
 
-            if (User.IsInRole(Roles.Faculty))
+            if (User.IsInRole(SchedulesRoles.Faculty))
             {
+                // Faculty can only read the schedules they created.
                 schedules = db.Schedules
                     .Where(s => s.CreatedBy == User.Identity.Name);
             }
-            else if (User.IsInRole(Roles.Student))
+            else if (User.IsInRole(SchedulesRoles.Student))
             {
+                // Students can only see schedules they've been added to.
                 var studentNumber = User.GetStudentNumber();
 
                 schedules = db.Schedules
@@ -391,8 +277,7 @@ namespace Schedules.Controllers
                                     StudentNumber = st.Student.StudentNumber,
                                     Name = st.Student.Name
                                 })
-                                .ToList(),
-
+                                .ToList()
                         })
                         .ToList(),
                     When = s.When,
