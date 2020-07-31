@@ -1,0 +1,8 @@
+bin/
+obj/
+out/
+Schedules.db
+app_offline.htm
+wwwroot/web.config
+Dockerfile
+appsettings.Development.json
