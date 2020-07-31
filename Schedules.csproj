@@ -4,8 +4,6 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <UserSecretsId>Schedules.b8b1491e-68c3-4938-8b11-8198ce29852a</UserSecretsId>
-    <OutputType>exe</OutputType>
-    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
 
