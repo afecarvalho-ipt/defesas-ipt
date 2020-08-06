@@ -1,0 +1,31 @@
+@model Schedules.Models.Admin.AdminSchedulesViewModel
+
+@{
+    ViewData["Title"] = "Horários";
+}
+
+<h1 class="mb-3">Horários</h1>
+
+<table class="table table-bordered table-striped table-hover table-sm">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Quando</th>
+            <th>Criado por</th>
+            <th>Nº de alunos inscritos</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var schedule in Model.Schedules)
+        {
+            <tr>
+                <td>@Html.DisplayFor(m => schedule.Id)</td>
+                <td>@Html.DisplayFor(m => schedule.Name)</td>
+                <td>@Html.DisplayFor(m => schedule.When)</td>
+                <td>@Html.DisplayFor(m => schedule.CreatedBy)</td>
+                <td>@Html.DisplayFor(m => schedule.StudentCount)</td>
+            </tr>
+        }
+    </tbody>
+</table>

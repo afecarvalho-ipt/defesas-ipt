@@ -30,6 +30,10 @@
                     </button>
                     <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row-reverse">
                         <ul class="navbar-nav">
+                            @if (User.IsInRole(Schedules.Utils.SchedulesRoles.Admin))
+                            {
+                                <li class="nav-item"><a class="nav-link" asp-action="Index" asp-controller="Admin">Admin</a></li>
+                            }
                             <li class="nav-item"><a class="nav-link" asp-action="Logout" asp-controller="Home">Terminar sessão</a></li>
                         </ul>
                     </div>

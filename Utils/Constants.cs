@@ -9,5 +9,6 @@ namespace Schedules.Utils
     {
         public const string Student = "Student";
         public const string Faculty = "Faculty";
+        public const string Admin = "Admin";
     }
 }

@@ -53,10 +53,10 @@ namespace Schedules
 
                 options.ResponseType = "code id_token";
                 options.GetClaimsFromUserInfoEndpoint = true;
-                options.SaveTokens = true;
+                options.SaveTokens = false;
 
                 // https://github.com/IdentityServer/IdentityServer4/issues/1786#issuecomment-346665690
-                options.ClaimActions.Add(new IptRoleClaimAction());
+                options.ClaimActions.Add(new IptRoleClaimAction(Configuration));
             });
 
             services.AddDbContext<SchedulesDb>(options =>
@@ -64,7 +64,9 @@ namespace Schedules
                 options.UseSqlite(Configuration.GetConnectionString("SchedulesDb"));
             });
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+            services.AddMvc()
+                .AddRazorRuntimeCompilation()
+                .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             services.AddSingleton<ITempDataProvider, CookieTempDataProvider>();
         }
